@@ -1,4 +1,5 @@
 ﻿using Beebyte_Deobfuscator.Lookup;
+using Il2CppInspector.PluginAPI.V100;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -29,8 +30,9 @@ namespace Beebyte_Deobfuscator.Output.Generators
     {
         public void Generate(BeebyteDeobfuscatorPlugin plugin, LookupModule module)
         {
+            string ExportPath = @"C:\Users\kakaogames\Desktop";
             List<Translation> translations = module.Translations.Where(t =>
-                t.Type == TranslationType.TypeTranslation &&
+                (t.Type == TranslationType.TypeTranslation || t.Type == TranslationType.MethodTranslation) &&
                 !Regex.IsMatch(t.CleanName, @"\+<.*(?:>).*__[1-9]{0,4}|[A-z]*=.{1,4}|<.*>") &&
                 !Regex.IsMatch(t.CleanName, module.NamingRegex) &&
                 (t._type?.DeclaringType.IsEmpty ?? false) &&

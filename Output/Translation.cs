@@ -12,6 +12,7 @@ namespace Beebyte_Deobfuscator.Output
     {
         TypeTranslation,
         FieldTranslation,
+        MethodTranslation
     }
 
     public enum ExportType
@@ -27,9 +28,9 @@ namespace Beebyte_Deobfuscator.Output
     {
         public abstract void Generate(BeebyteDeobfuscatorPlugin plugin, LookupModule module);
 
-        public static IGenerator GetGenerator(BeebyteDeobfuscatorPlugin plugin)
+        public static IGenerator GetGenerator(ExportType exportType)
         {
-            return plugin.Export switch
+            return exportType switch
             {
                 ExportType.Classes => new Il2CppTranslatorGenerator(),
                 ExportType.PlainText => new PlaintextTranslationsGenerator(),
@@ -48,6 +49,7 @@ namespace Beebyte_Deobfuscator.Output
 
         public LookupField _field;
         public LookupType _type;
+        public LookupMethod _method;
 
         public Translation(string obfName, LookupType type)
         {
@@ -65,15 +67,22 @@ namespace Beebyte_Deobfuscator.Output
             Type = TranslationType.FieldTranslation;
         }
 
-        public static void Export(BeebyteDeobfuscatorPlugin plugin, LookupModule lookupModule)
+        public Translation(string obfName, LookupMethod method)
         {
-            PluginServices services = PluginServices.For(plugin);
+            ObfName = obfName;
+            CleanName = method.Name;
+            _method = method;
+            Type = TranslationType.MethodTranslation;
+        }
 
-            services.StatusUpdate("Generating output..");
+        public static void Export(LookupModule lookupModule, ExportType exportType)
+        {
+            Console.WriteLine("Generating output..");
             if (!lookupModule.Translations.Any(t => t.CleanName != t.ObfName))
             {
                 return;
             }
+
             List<Translation> filteredTranslations = lookupModule.Translations
                 .Where(t => !t.CleanName.EndsWith('&'))
                 .GroupBy(t => t.CleanName)
@@ -84,7 +93,8 @@ namespace Beebyte_Deobfuscator.Output
             lookupModule.Translations.Clear();
             lookupModule.Translations.AddRange(filteredTranslations);
 
-            IGenerator.GetGenerator(plugin).Generate(plugin, lookupModule);
+
+            IGenerator.GetGenerator(exportType).Generate(lookupModule);
         }
 
         public bool Equals([AllowNull] Translation other)

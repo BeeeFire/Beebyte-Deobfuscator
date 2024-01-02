@@ -10,6 +10,8 @@ namespace Beebyte_Deobfuscator.Output.Generators
     {
         public Dictionary<string, string> Types { get; set; }
         public Dictionary<string, string> Fields { get; set; }
+
+        public Dictionary<string, string> Methods { get; set; }
     }
     class JsonTranslationsGenerator : IGenerator
     {
@@ -19,6 +21,7 @@ namespace Beebyte_Deobfuscator.Output.Generators
             {
                 Types = module.Translations.Where(t => t.Type == TranslationType.TypeTranslation && t.ObfName != t.CleanName).ToDictionary(t => t.ObfName, t => t.CleanName),
                 Fields = module.Translations.Where(t => t.Type == TranslationType.FieldTranslation && t.ObfName != t.CleanName).ToDictionary(t => t.ObfName, t => t.CleanName),
+                Methods = module.Translations.Where(t => t.Type == TranslationType.MethodTranslation && t.ObfName != t.CleanName).ToDictionary(t => t.ObfName, t => t.CleanName),
             };
             using var exportFile = new FileStream(plugin.ExportPath + Path.DirectorySeparatorChar + "translations.json", FileMode.Create);
             StreamWriter output = new StreamWriter(exportFile);

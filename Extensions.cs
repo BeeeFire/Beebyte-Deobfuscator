@@ -16,12 +16,18 @@ namespace Beebyte_Deobfuscator
         public static LookupModel ToLookupModel(this TypeModel typeModel, EventHandler<string> statusCallback = null)
         {
             LookupModel model = new LookupModel();
+            //model.Types.AddRange(typeModel.Types.Where(
+            //    t => t.Namespace != "System" &&
+            //    t.BaseType?.Namespace != "System" &&
+            //    !t.Namespace.Contains("UnityEngine")
+            //    )
+            //    .ToLookupTypeList(model, statusCallback: statusCallback));
             model.Types.AddRange(typeModel.Types.Where(
                 t => t.Namespace != "System" &&
-                t.BaseType?.Namespace != "System" &&
                 !t.Namespace.Contains("UnityEngine")
                 )
                 .ToLookupTypeList(model, statusCallback: statusCallback));
+
             model.Namespaces.AddRange(typeModel.Types.Select(t => t.Namespace).Distinct());
             model.TypeModel = typeModel;
             return model;
@@ -124,11 +130,11 @@ namespace Beebyte_Deobfuscator
                 .AsParallel()
                 .WithDegreeOfParallelism(Math.Max(Environment.ProcessorCount / 2, 1))
                 .Select(type =>
-            {
-                current++;
-                statusCallback?.Invoke(null, $"Loaded {current}/{total} types...");
-                return type.ToLookupType(lookupModel, recurse);
-            });
+                {
+                    current++;
+                    statusCallback?.Invoke(null, $"Loaded {current}/{total} types...");
+                    return type.ToLookupType(lookupModel, recurse);
+                });
         }
 
         public static IEnumerable<LookupType> ToLookupTypeList(this IEnumerable<TypeInfo> il2cppTypes, LookupModel lookupModel, bool recurse = true, EventHandler<string> statusCallback = null)
@@ -140,11 +146,11 @@ namespace Beebyte_Deobfuscator
                 .AsParallel()
                 .WithDegreeOfParallelism(Math.Max(Environment.ProcessorCount / 2, 1))
                 .Select(type =>
-            {
-                current++;
-                statusCallback?.Invoke(null, $"Loaded {current}/{total} types...");
-                return type.ToLookupType(lookupModel, recurse);
-            });
+                {
+                    current++;
+                    statusCallback?.Invoke(null, $"Loaded {current}/{total} types...");
+                    return type.ToLookupType(lookupModel, recurse);
+                });
         }
 
         public static LookupField ToLookupField(this FieldInfo field, LookupModel lookupModel)
@@ -332,7 +338,12 @@ namespace Beebyte_Deobfuscator
 
             string obfName = type.CSharpName;
 
-            if (!type.ShouldTranslate(module) || type.IsEnum)
+            //if (!type.ShouldTranslate(module) || type.IsEnum)
+            //{
+            //    return;
+            //}
+
+            if (!type.ShouldTranslate(module))
             {
                 return;
             }

@@ -12,7 +12,7 @@ namespace Beebyte_Deobfuscator.Output.Generators
         public void Generate(BeebyteDeobfuscatorPlugin plugin, LookupModule module)
         {
             IEnumerable<Translation> translations = module.Translations.Where(t =>
-                t.Type == TranslationType.TypeTranslation &&
+                (t.Type == TranslationType.TypeTranslation || t.Type == TranslationType.MethodTranslation) &&
                 !Regex.IsMatch(t.CleanName, @"\+<.*(?:>).*__[1-9]{0,4}|[A-z]*=.{1,4}|<.*>") &&
                 !Regex.IsMatch(t.CleanName, module.NamingRegex) &&
                 (t._type?.DeclaringType.IsEmpty ?? false) &&
