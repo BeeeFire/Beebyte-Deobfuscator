@@ -37,18 +37,19 @@ namespace Beebyte_Deobfuscator.Lookup
                 {
                     continue;
                 }
-                if (!CleanTypes.ContainsKey(type.Name))
+                if (!CleanTypes.ContainsKey(type.Name) && type.AssemblyName.Contains("Assembly-CSharp"))
                 {
                     CleanTypes.Add(type.Name, type);
                 }
             }
+
             foreach (LookupType type in obfModule.Types)
             {
                 if (type.IsEmpty)
                 {
                     continue;
                 }
-                if (!ObfTypes.ContainsKey(type.Name))
+                if (!ObfTypes.ContainsKey(type.Name) && type.AssemblyName.Contains("Assembly-CSharp"))
                 {
                     ObfTypes.Add(type.Name, type);
                 }
@@ -62,9 +63,18 @@ namespace Beebyte_Deobfuscator.Lookup
             foreach (var type in ObfTypes.Where(t => t.Value.ShouldTranslate(this) && t.Value.DeclaringType.IsEmpty))
             {
                 statusCallback?.Invoke(this, $"Created {current}/{total} Lookup Matrices");
-
                 Matrix.Insert(type.Value);
             }
+
+            //int total = ObfTypes.Count(t => t.Value.ShouldTranslate(this));
+            //foreach (var type in ObfTypes.Where(t => t.Value.ShouldTranslate(this)))
+            //{
+            //    statusCallback?.Invoke(this, $"Created {current}/{total} Lookup Matrices");
+
+            //    Matrix.Insert(type.Value);
+            //}
+
+            int test = Matrix.Count();
         }
 
         public LookupType GetMatchingType(LookupType type, bool checkoffsets)
@@ -75,13 +85,15 @@ namespace Beebyte_Deobfuscator.Lookup
             if (types.Count() == 1 && types[0] != null)
             {
                 bool t1 = !MatchedTypes.Contains(types[0]);
-                bool t2 = !CleanTypeNames.Contains(types[0].Name) || types[0].Fields.Any(f => Regex.IsMatch(f.Name, NamingRegex));
+                //bool t2 = !CleanTypeNames.Contains(types[0].Name) || types[0].Fields.Any(f => Regex.IsMatch(f.Name, NamingRegex));
+                bool t2 = !CleanTypeNames.Contains(types[0].Name);
                 if (t1 && t2)
                 {
                     if (type.Namespace != types[0].Namespace)
                     {
                         return null;
                     }
+
                     else if (type.Methods.Count > 0 &&
                      (type.Methods.Count - (type.Methods.Count * 0.3) > types[0].Methods.Count ||
                          type.Methods.Count + (type.Methods.Count * 0.3) < types[0].Methods.Count))
@@ -103,7 +115,12 @@ namespace Beebyte_Deobfuscator.Lookup
             float best_score = 0.0f;
             foreach (LookupType t in types)
             {
-                if (MatchedTypes.Contains(t) || (CleanTypeNames.Contains(t.Name) && !t.Fields.Any(f => Regex.IsMatch(f.Name, NamingRegex))))
+                //if (MatchedTypes.Contains(t) || (CleanTypeNames.Contains(t.Name) && !t.Fields.Any(f => Regex.IsMatch(f.Name, NamingRegex))))
+                //{
+                //    continue;
+                //}
+
+                if (MatchedTypes.Contains(t) || (CleanTypeNames.Contains(t.Name) && !t.Fields.Any()))
                 {
                     continue;
                 }
@@ -133,15 +150,17 @@ namespace Beebyte_Deobfuscator.Lookup
 
             if (typeInfo != null && !MatchedTypes.Contains(typeInfo))
             {
+                // 30% margin of error
+                double methodCntMin = type.Methods.Count - ((float)type.Methods.Count * 0.4);
+                double methodCntMax = type.Methods.Count + ((float)type.Methods.Count * 0.4);
+
                 // Namespace Check
                 if (type.Namespace != typeInfo.Namespace)
                 {
                     return null;
                 }
                 // Method Count Check
-                else if (type.Methods.Count > 0 &&
-                        (type.Methods.Count - (type.Methods.Count * 0.3) > typeInfo.Methods.Count ||
-                            type.Methods.Count + (type.Methods.Count * 0.3) < typeInfo.Methods.Count))
+                else if (type.Methods.Count > 0 && (methodCntMin > typeInfo.Methods.Count || methodCntMax < typeInfo.Methods.Count))
                 {
                     return null;
                 }
@@ -152,30 +171,15 @@ namespace Beebyte_Deobfuscator.Lookup
             return typeInfo;
         }
 
-
-        //public LookupMethod GetMatchingMethod(LookupMethod cleanMethod, List<LookupMethod> obfMethods, bool checkoffsets)
-        //{
-        //    obfMethods = obfMethods.Where(
-        //        m => (m.ParameterList.Count == cleanMethod.ParameterList.Count && m.ReturnType == cleanMethod.ReturnType && !m.IsPropertymethod)
-        //        ).ToList();
-
-        //    return cleanMethod;
-        //}
-
         public void TranslateTypes(bool checkoffsets = false, EventHandler<string> statusCallback = null)
         {
             //var filteredTypes = CleanTypes.Where(t => t.Value.DeclaringType.IsEmpty && !t.Value.IsEnum && !Regex.Match(t.Value.Name, @"\+<.*(?:>).*__[1-9]{0,4}|[A-z]*=.{1,4}|<.*>").Success);
-            var filteredTypes = CleanTypes.Where(t => t.Value.DeclaringType.IsEmpty && !Regex.Match(t.Value.Name, @"\+<.*(?:>).*__[1-9]{0,4}|[A-z]*=.{1,4}|<.*>").Success);
+            var filteredTypes = CleanTypes.Where(t => !Regex.Match(t.Value.Name, @"\+<.*(?:>).*__[1-9]{0,4}|[A-z]*=.{1,4}|<.*>").Success);
             int total = filteredTypes.Count();
             int current = 0;
             foreach (var type in filteredTypes)
             {
                 current++;
-                //if (type.Value.Name == "ChatDefine")
-                //{
-                //    Console.WriteLine("Test2");
-                //}
-
                 LookupType matchingType = GetMatchingType(type.Value, checkoffsets);
 
                 if (matchingType == null)
@@ -183,17 +187,11 @@ namespace Beebyte_Deobfuscator.Lookup
                     continue;
                 }
 
+                matchingType.SetName(type.Key, this);
                 if (matchingType.Children.Any() && type.Value.Children.Any())
                 {
                     LookupTranslators.TranslateChildren(matchingType, type.Value, checkoffsets, this);
                 }
-
-                if (matchingType.Il2CppType.IsNested && matchingType.IsNested)
-                {
-                    Console.WriteLine("123123");
-                }
-
-                matchingType.SetName(type.Key, this);
             }
             TranslateFields(checkoffsets);
 

@@ -26,7 +26,7 @@ namespace Beebyte_Deobfuscator.Output
 
     public interface IGenerator
     {
-        public abstract void Generate(BeebyteDeobfuscatorPlugin plugin, LookupModule module);
+        public abstract void Generate(LookupModule module);
 
         public static IGenerator GetGenerator(ExportType exportType)
         {
@@ -55,6 +55,14 @@ namespace Beebyte_Deobfuscator.Output
         {
             ObfName = obfName;
             CleanName = type.Name;
+            _type = type;
+            Type = TranslationType.TypeTranslation;
+        }
+
+        public Translation(string obfName, string cleanName, LookupType type)
+        {
+            ObfName = obfName;
+            CleanName = cleanName;
             _type = type;
             Type = TranslationType.TypeTranslation;
         }

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Beebyte_Deobfuscator.Lookup
@@ -46,6 +47,10 @@ namespace Beebyte_Deobfuscator.Lookup
 
                 obfChild.SetName(best_match.Name, lookupModel);
                 TranslateFields(obfChild, best_match, checkoffsets, lookupModel);
+
+                if (obfChild.Children.Any() && best_match.Children.Any())
+                    TranslateChildren(obfChild, best_match, checkoffsets, lookupModel);
+
             }
         }
 

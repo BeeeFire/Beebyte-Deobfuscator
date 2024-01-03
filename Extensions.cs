@@ -140,7 +140,8 @@ namespace Beebyte_Deobfuscator
         public static IEnumerable<LookupType> ToLookupTypeList(this IEnumerable<TypeInfo> il2cppTypes, LookupModel lookupModel, bool recurse = true, EventHandler<string> statusCallback = null)
         {
             int current = 0;
-            var filteredTypes = il2cppTypes.Where(t => !t.IsNested);
+            //var filteredTypes = il2cppTypes.Where(t => !t.IsNested);
+            var filteredTypes = il2cppTypes;
             int total = filteredTypes.Count();
             return filteredTypes
                 .AsParallel()
@@ -323,12 +324,34 @@ namespace Beebyte_Deobfuscator
             }
             return typeDef;
         }
-        public static bool ShouldTranslate(this LookupType type, LookupModule module) => Regex.Match(type.Name, module.NamingRegex).Success ||
+
+        public static bool ShouldTranslate(this LookupType type, LookupModule module)
+        {
+            bool condition1 = Regex.Match(type.Name, module.NamingRegex).Success ||
             type.Fields.Any(f => Regex.Match(f.Name, module.NamingRegex).Success) || type.Fields.Any(f => f.Translated);
+
+            if (condition1 == false)
+            {
+                string lastStr = type.Name.Split("+")[type.Name.Split("+").Length - 1];
+                bool condition2 = Regex.Match(lastStr, module.NamingRegex).Success ||
+                    type.Fields.Any(f => Regex.Match(f.Name, module.NamingRegex).Success) || type.Fields.Any(f => f.Translated);
+
+                if (condition2)
+                    return condition2;
+            }
+
+            return condition1;
+        }
 
         public static void SetName(this LookupType type, string name, LookupModule module)
         {
-            if (!Regex.Match(type.Name, module.NamingRegex).Success && type.Fields.Any(f => Regex.Match(f.Name, module.NamingRegex).Success))
+            string realClassname = string.Empty;
+            if (type.Name.Contains("+"))
+                realClassname = type.Name.Split("+")[type.Name.Split("+").Length - 1];
+            else
+                realClassname = type.Name;
+
+            if (!Regex.Match(realClassname, module.NamingRegex).Success && type.Fields.Any(f => Regex.Match(f.Name, module.NamingRegex).Success))
             {
                 var t = new Translation(type.CSharpName, type);
                 module.Translations.Add(t);
@@ -337,7 +360,6 @@ namespace Beebyte_Deobfuscator
             }
 
             string obfName = type.CSharpName;
-
             //if (!type.ShouldTranslate(module) || type.IsEnum)
             //{
             //    return;
@@ -348,11 +370,23 @@ namespace Beebyte_Deobfuscator
                 return;
             }
 
-            type.Il2CppType.Name = name;
-            var translation = new Translation(obfName, type);
+            Translation translation;
+            if (name.Contains("+"))
+            {
+                string normalizeStr = name.Split("+")[name.Split("+").Length - 1];
+                type.Il2CppType.Name = normalizeStr;
+                translation = new Translation(obfName, normalizeStr, type);
+            }
+            else
+            {
+                type.Il2CppType.Name = name;
+                translation = new Translation(obfName, type);
+            }
+
             module.Translations.Add(translation);
             type.Translation = translation;
         }
+
         public static void SetName(this LookupMethod method, string name, string namingRegex)
         {
             if (!Regex.Match(method.Name, namingRegex).Success)
