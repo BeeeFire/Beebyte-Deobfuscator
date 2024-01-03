@@ -39,30 +39,20 @@ namespace Beebyte_Deobfuscator
             foreach (var f1 in t1.Fields.Select((Value, Index) => new { Value, Index }))
             {
                 if (t2.Fields.Count <= f1.Index)
-                {
                     continue;
-                }
 
                 LookupField f2 = t2.Fields[f1.Index];
                 if (f1.Value.Name == f2.Name)
-                {
                     return 1.5f;
-                }
 
                 if (!Regex.Match(f1.Value.Name, lookupModel.NamingRegex).Success && f1.Value.Name != f2.Name)
-                {
                     return 0.0f;
-                }
 
                 if (f1.Value.IsStatic || f1.Value.IsLiteral)
-                {
                     continue;
-                }
 
                 if (f1.Value.Offset != f2.Offset)
-                {
                     comparative_score -= score_penalty;
-                }
             }
 
             return comparative_score;
@@ -88,9 +78,7 @@ namespace Beebyte_Deobfuscator
             foreach (var f1 in t1.Fields.Select((Value, Index) => new { Value, Index }))
             {
                 if (t2.Fields.Count <= f1.Index)
-                {
                     continue;
-                }
 
                 LookupField f2 = t2.Fields[f1.Index];
                 if (f1.Value.Name == f2.Name)
